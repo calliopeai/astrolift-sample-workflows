@@ -1,0 +1,38 @@
+# astrolift-sample-workflows — fan_out pattern (spec 42, R9).
+#
+# Authored against the spec 40 §5.4 workflow manifest grammar.
+# pattern = "fan_out": one fan_out agent_dispatch stage (fan_out > 0
+# spawns N parallel children — engine: WorkflowDefinitionRunWorkflow
+# "fan-out spawns N children", spec 40 §1) followed by an aggregation
+# stage that merges the children's outputs ("AGGREGATION merges").
+#
+# Per spec 40 §5.1 the aggregation stage merges the IMMEDIATELY PRECEDING
+# fan_out stage (structural/derived by order — there is NO explicit
+# merge-target key in the §5.4 grammar; see README ambiguity note).
+#
+# DEFINITION ONLY (declarative) — exercised in campaign Domain C, which
+# DEPENDS on the Workflows-module build (#964, not yet built). See README.md.
+
+[workflow]
+slug        = "sample-fan-out"
+name        = "Sample — Fan-out + Aggregation"
+pattern     = "fan_out"
+description = "Fan out the sample-agent across N parallel workers, then aggregate the worker outputs into one result."
+
+# Stage 0 — fan-out worker: fan_out = 3 runs three parallel copies of the
+# sample-agent (static count). Use "dynamic" instead to fan out one child
+# per item of the prior stage's output (spec 40 §5.4 fan_out semantics).
+[[stage]]
+kind       = "agent_dispatch"
+role       = "worker"
+agent      = "sample-agent"
+skills     = ["http-request", "data-transform"]
+on_failure = "skip"
+timeout    = 600
+fan_out    = 3
+
+# Stage 1 — aggregation: merges the outputs of the preceding fan_out
+# stage (stage 0) into a single combined result. kind = "aggregation"
+# is a non-dispatch stage, so it carries no agent/skills/role.
+[[stage]]
+kind = "aggregation"

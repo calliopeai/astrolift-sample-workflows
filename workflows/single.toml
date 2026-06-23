@@ -1,0 +1,24 @@
+# astrolift-sample-workflows — single pattern (spec 42, R9).
+#
+# Authored against the spec 40 §5.4 workflow manifest grammar
+# ([workflow] slug/name/pattern + [[stage]] kind/role/agent/skills/...).
+# pattern = "single": exactly one agent_dispatch stage, no chaining.
+# Dispatches the sample-agent (R8) to do one unit of work.
+#
+# DEFINITION ONLY (declarative) — exercised in campaign Domain C, which
+# DEPENDS on the Workflows-module build (#964, not yet built). Authored
+# now / exercised later. See README.md.
+
+[workflow]
+slug        = "sample-single"
+name        = "Sample — Single"
+pattern     = "single"
+description = "One agent_dispatch stage. The minimal workflow: dispatch the sample-agent once and return its output."
+
+[[stage]]
+kind       = "agent_dispatch"
+role       = "worker"
+agent      = "sample-agent"
+skills     = ["file-ops", "data-transform"]
+on_failure = "fail"
+timeout    = 600

@@ -1,0 +1,49 @@
+# astrolift-sample-workflows — supervisor_worker pattern (spec 42, R9).
+#
+# Authored against the spec 40 §5.4 workflow manifest grammar.
+# pattern = "supervisor_worker": the multi-agent showcase (spec 40 §4.1
+# catalogue #8) — decompose -> dispatch N workers (fan_out) -> aggregate.
+# A supervisor agent splits the task; the engine fans the work out to N
+# worker children; an aggregation stage reassembles their outputs.
+#
+# Modeled with the §5.4 stage kinds available (agent_dispatch + the
+# fan_out field + aggregation). §5.4 defines no distinct "supervisor"
+# stage kind — the supervisor IS the decompose agent_dispatch and the
+# pattern_kind carries the semantic (see README ambiguity note).
+#
+# DEFINITION ONLY (declarative) — exercised in campaign Domain C, which
+# DEPENDS on the Workflows-module build (#964, not yet built). See README.md.
+
+[workflow]
+slug        = "sample-supervisor-worker"
+name        = "Sample — Supervisor / Worker"
+pattern     = "supervisor_worker"
+description = "Supervisor decomposes the task, fans it out to N worker agents in parallel, then aggregates the workers' results."
+
+# Stage 0 — supervisor: decomposes the incoming task into sub-tasks.
+# Its output (a list) is what the next stage fans out over.
+[[stage]]
+kind       = "agent_dispatch"
+role       = "supervisor"
+agent      = "sample-agent"
+skills     = ["data-transform"]
+on_failure = "escalate"
+timeout    = 600
+
+# Stage 1 — workers: fan_out = "dynamic" spawns one worker child per
+# item produced by the supervisor (dynamic count from prior output,
+# per spec 40 §5.4). on_failure = "skip" lets the aggregation proceed
+# with the workers that succeeded.
+[[stage]]
+kind       = "agent_dispatch"
+role       = "worker"
+agent      = "sample-agent"
+skills     = ["http-request", "file-ops"]
+on_failure = "skip"
+timeout    = 900
+fan_out    = "dynamic"
+
+# Stage 2 — aggregation: merges the worker outputs (the preceding
+# fan_out stage, stage 1) into the supervisor's final result.
+[[stage]]
+kind = "aggregation"

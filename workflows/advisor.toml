@@ -1,0 +1,32 @@
+# astrolift-sample-workflows — advisor pattern (spec 42, R9).
+#
+# Authored against the spec 40 §5.4 workflow manifest grammar.
+# pattern = "advisor": a read-only advisory run — the agent inspects /
+# analyzes and returns guidance, taking no mutating action. Spec 42 R9
+# calls for "an advisor (read-only) stage."
+#
+# AMBIGUITY: §5.4 exposes NO "read-only" stage field — the read-only
+# intent is carried by the advisor pattern_kind + an advisory role +
+# read-only skills (no git/commit-pr/export-write here). The grammar has
+# no mechanism to enforce read-only at the stage level (see README note).
+#
+# DEFINITION ONLY (declarative) — exercised in campaign Domain C, which
+# DEPENDS on the Workflows-module build (#964, not yet built). See README.md.
+
+[workflow]
+slug        = "sample-advisor"
+name        = "Sample — Advisor"
+pattern     = "advisor"
+description = "A single read-only advisory stage: the sample-agent inspects and returns guidance, mutating nothing."
+
+# Stage 0 — advisor: read-only analysis. Skills are deliberately
+# read-oriented (codebase-qa, web-research, http-request) — no git /
+# commit-pr / export so the stage stays advisory. on_failure = "fail":
+# an advisory run that can't complete should surface, not retry/skip.
+[[stage]]
+kind       = "agent_dispatch"
+role       = "advisor"
+agent      = "sample-agent"
+skills     = ["codebase-qa", "web-research", "http-request"]
+on_failure = "fail"
+timeout    = 600

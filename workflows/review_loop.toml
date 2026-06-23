@@ -1,0 +1,53 @@
+# astrolift-sample-workflows — review_loop pattern (spec 42, R9).
+#
+# Authored against the spec 40 §5.4 workflow manifest grammar.
+# pattern = "review_loop": agent does work -> a human_gate pauses for an
+# approve/reject decision -> the workflow iterates (rework on reject) or
+# proceeds (on approve). The human_gate stage pauses the run on a
+# "human_gate_decision" Temporal signal (24h default), per spec 40 §1.
+#
+# The "iterate" / loop-back on reject is a property of the review_loop
+# pattern_kind + the human_gate's approve/reject branch (spec 40 §5.1:
+# "the human_gate approve/reject branch ... rendered as branch edges").
+# §5.4 exposes NO explicit loop-target / max-iterations key — the loop
+# semantic is carried by pattern_kind, not a per-stage field (see README
+# ambiguity note).
+#
+# DEFINITION ONLY (declarative) — exercised in campaign Domain C, which
+# DEPENDS on the Workflows-module build (#964, not yet built). See README.md.
+
+[workflow]
+slug        = "sample-review-loop"
+name        = "Sample — Review Loop"
+pattern     = "review_loop"
+description = "Agent produces work, a human gate approves or rejects, and the loop iterates on the agent stage until approved."
+
+# Stage 0 — assess: the agent produces the artifact under review.
+# on_failure = "retry" so transient agent failures retry before the gate.
+[[stage]]
+kind       = "agent_dispatch"
+role       = "assessor"
+agent      = "sample-agent"
+skills     = ["file-ops", "data-transform"]
+on_failure = "retry"
+timeout    = 900
+
+# Stage 1 — human_gate: pauses for a human approve/reject. prompt is the
+# question shown to the approver; approvers is the role(s) allowed to
+# decide; timeout = 86400s (24h, the §5.4 default) before the gate lapses.
+# A reject loops back to stage 0 (review_loop pattern); an approve
+# proceeds to stage 2.
+[[stage]]
+kind      = "human_gate"
+prompt    = "Approve the assessed result? Reject to send it back for rework."
+approvers = ["team:reviewers"]
+timeout   = 86400
+
+# Stage 2 — decide: the agent finalizes / acts on the approved result.
+[[stage]]
+kind       = "agent_dispatch"
+role       = "decider"
+agent      = "sample-agent"
+skills     = ["export"]
+on_failure = "fail"
+timeout    = 600

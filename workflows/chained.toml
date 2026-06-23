@@ -1,0 +1,44 @@
+# astrolift-sample-workflows — chained pattern (spec 42, R9).
+#
+# Authored against the spec 40 §5.4 workflow manifest grammar.
+# pattern = "chained": ordered agent_dispatch stages run in sequence;
+# each stage's output feeds the next stage's input (stage I/O chaining
+# is structural/derived from order N -> N+1, per spec 40 §5.1 — no
+# explicit output-mapping key in the §5.4 grammar).
+#
+# DEFINITION ONLY (declarative) — exercised in campaign Domain C, which
+# DEPENDS on the Workflows-module build (#964, not yet built). See README.md.
+
+[workflow]
+slug        = "sample-chained"
+name        = "Sample — Chained"
+pattern     = "chained"
+description = "Three agent_dispatch stages in sequence (prepare -> transform -> emit). Each stage's output chains into the next."
+
+# Stage 0 — prepare: gather/normalize the inputs for the chain.
+[[stage]]
+kind       = "agent_dispatch"
+role       = "preparer"
+agent      = "sample-agent"
+skills     = ["file-ops"]
+on_failure = "fail"
+timeout    = 600
+
+# Stage 1 — transform: operate on stage 0's output. Retry on transient
+# failure (on_failure = "retry") since this is the work-heavy middle step.
+[[stage]]
+kind       = "agent_dispatch"
+role       = "transformer"
+agent      = "sample-agent"
+skills     = ["data-transform", "csv-process"]
+on_failure = "retry"
+timeout    = 900
+
+# Stage 2 — emit: write the chained result out.
+[[stage]]
+kind       = "agent_dispatch"
+role       = "emitter"
+agent      = "sample-agent"
+skills     = ["export", "file-ops"]
+on_failure = "fail"
+timeout    = 600
